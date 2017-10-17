@@ -50,6 +50,9 @@ func main() {
 	key_set := JSONWebKeySet{}
 
 	for _, cert_fileinfo := range cert_files {
+		if string(cert_fileinfo.Name()[0]) == "." {
+			continue
+		}
 		cert_file_path := path.Join(certs_directory_path, cert_fileinfo.Name())
 		cert_file, err := os.Open(cert_file_path)
 
