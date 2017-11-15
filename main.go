@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/x509"
 	"encoding/base64"
@@ -10,6 +11,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math/big"
 	"os"
 	"path"
 )
@@ -70,6 +72,16 @@ func main() {
 
 		fingerprint := getCertFingerprint(cert)
 
+		rsaPublicKey, ok := cert.PublicKey.(*rsa.PublicKey)
+
+		if ok != true {
+			fmt.Println(cert_file_path, "is not an RSA certificate")
+			os.Exit(1)
+		}
+
+		modulus := base64.URLEncoding.EncodeToString(rsaPublicKey.N.Bytes())
+		exponent := base64.URLEncoding.EncodeToString(big.NewInt(int64(rsaPublicKey.E)).Bytes())
+
 		key := JSONWebKey{
 			Algorithm: "RS256",
 			KeyType:   "RSA",
@@ -80,7 +92,9 @@ func main() {
 			X509CertificateChain: []string{
 				base64.StdEncoding.EncodeToString(cert.Raw),
 			},
-			KeyID: fingerprint,
+			KeyID:    fingerprint,
+			Modulus:  modulus,
+			Exponent: exponent,
 		}
 
 		key_set.Keys = append(key_set.Keys, key)
@@ -129,6 +143,8 @@ type JSONWebKey struct {
 	Algorithm            string   `json:"alg"`
 	KeyID                string   `json:"kid"`
 	X509CertificateChain []string `json:"x5c"`
+	Exponent             string   `json:"e"`
+	Modulus              string   `json:"n"`
 }
 
 type JSONWebKeySet struct {
